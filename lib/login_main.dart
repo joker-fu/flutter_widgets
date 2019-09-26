@@ -23,6 +23,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.lightBlue,
       ),
       home: LoginPage(),
+      // 解决输入框长按菜单仅英语问题
       localizationsDelegates: [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -90,6 +91,7 @@ class _LoginPageState extends State<LoginPage> {
 //          ],
 //        ),
 //      ),
+     // SingleChildScrollView 包裹解决溢出问题，当然这是根据实际需求来，也可以通过设置 resizeToAvoidBottomInset 解决
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(30),
         child: Column(
