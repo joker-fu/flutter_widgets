@@ -1,9 +1,15 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:connectivity/connectivity.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_widgets/entity/user_entity.dart';
+import 'package:flutter_widgets/loading_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   //去掉状态栏透明层
@@ -91,7 +97,7 @@ class _LoginPageState extends State<LoginPage> {
 //          ],
 //        ),
 //      ),
-     // SingleChildScrollView 包裹解决溢出问题，当然这是根据实际需求来，也可以通过设置 resizeToAvoidBottomInset 解决
+      // SingleChildScrollView 包裹解决溢出问题，当然这是根据实际需求来，也可以通过设置 resizeToAvoidBottomInset 解决
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(30),
         child: Column(
@@ -179,8 +185,7 @@ class _LoginPageState extends State<LoginPage> {
             RaisedButton(
               color: Colors.lightBlue,
               onPressed: () {
-                _showInfoDialog(
-                    ' 账号：${_accountController.text} \n 密码：${_pwdController.text}');
+                _doLogin();
               },
               child: Text(
                 '登陆',
@@ -241,5 +246,68 @@ class _LoginPageState extends State<LoginPage> {
         );
       },
     );
+  }
+
+  Future _doLogin() async {
+    Dio dio = Dio();
+
+    dio.options..baseUrl = 'https://www.wanandroid.com/';
+
+    // 添加拦截器
+    dio.interceptors
+      ..add(InterceptorsWrapper(
+        onRequest: (RequestOptions options) async {
+          var prefs = await SharedPreferences.getInstance();
+          var userJson = prefs.getString('user');
+          if (userJson != null && userJson.isNotEmpty) {
+            UserData user = UserData.fromJson(jsonDecode(userJson));
+            options.headers
+              ..addAll({
+                'userId': user.id ?? '',
+                'token': user.token ?? '',
+              });
+          }
+          return options;
+        },
+      ))
+      ..add(LogInterceptor(
+        requestHeader: true,
+        requestBody: true,
+        responseHeader: true,
+        responseBody: true,
+      ));
+
+    // 检测网络连接
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult == ConnectivityResult.none) {
+      _showInfoDialog('网络连接异常');
+      return;
+    }
+
+    LoadingDialog.show(context);
+
+    // 发起请求
+    Response response = await dio.post('user/login',
+        data: FormData.fromMap({
+          "username": _accountController.text.trim(),
+          "password": _pwdController.text.trim(),
+        }));
+
+    if (response.statusCode == 200) {
+      UserEntity user = UserEntity.fromJson(response.data);
+      if (user.errorCode == 0) {
+        //登录成功后 保存信息
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        prefs.setString('user', jsonEncode(user.data));
+        LoadingDialog.hide(context);
+        _showInfoDialog('登录成功');
+      } else {
+        LoadingDialog.hide(context);
+        _showInfoDialog('登录失败：${user.errorMsg}');
+      }
+    } else {
+      LoadingDialog.hide(context);
+      _showInfoDialog('网络请求异常：${response.statusMessage}');
+    }
   }
 }
