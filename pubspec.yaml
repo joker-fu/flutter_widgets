@@ -32,6 +32,9 @@ dependencies:
   connectivity: ^0.4.4
   # https://github.com/flutter/plugins/tree/master/packages/shared_preferences
   shared_preferences: ^0.5.3+4
+  # Provider https://github.com/rrousselGit/provider
+  provider: ^3.1.0
+
 
 dev_dependencies:
   flutter_test:
