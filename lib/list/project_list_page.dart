@@ -3,9 +3,15 @@ import 'package:flutter_widgets/entity/project_list_entity.dart';
 import 'package:flutter_widgets/net/net.dart';
 import 'package:provider/provider.dart';
 
-class ProjectListPage extends StatelessWidget {
+class ProjectListPage extends StatefulWidget {
+  @override
+  _ProjectListPageState createState() => _ProjectListPageState();
+}
+
+class _ProjectListPageState extends State<ProjectListPage> {
   @override
   Widget build(BuildContext context) {
+    print('--------build page----------');
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -17,6 +23,7 @@ class ProjectListPage extends StatelessWidget {
         model: ProjectViewModel(),
         onReady: (model) => model.refresh(),
         builder: (context, model, _) {
+          print('--------build list----------');
           return NotificationListener(
             child: RefreshIndicator(
               child: (model.list?.length ?? 0) == 0
@@ -169,7 +176,6 @@ class ProjectViewModel extends ChangeNotifier {
         queryParameters: {'cid': 294}).then((res) {
       ProjectListEntity entity = ProjectListEntity.fromJson(res);
       if (entity.errorCode == 0) {
-        //登录成功后 保存信息
         if (_index == 1) {
           list = entity.data.datas;
         } else {
